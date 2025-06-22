@@ -7,7 +7,8 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkEmailExistsForUpdate = `-- name: CheckEmailExistsForUpdate :one
@@ -17,12 +18,12 @@ SELECT EXISTS(
 `
 
 type CheckEmailExistsForUpdateParams struct {
-	Email string `json:"email"`
-	ID    int32  `json:"id"`
+	Email string `db:"email" json:"email"`
+	ID    int32  `db:"id" json:"id"`
 }
 
 func (q *Queries) CheckEmailExistsForUpdate(ctx context.Context, arg CheckEmailExistsForUpdateParams) (bool, error) {
-	row := q.db.QueryRowContext(ctx, checkEmailExistsForUpdate, arg.Email, arg.ID)
+	row := q.db.QueryRow(ctx, checkEmailExistsForUpdate, arg.Email, arg.ID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -35,7 +36,7 @@ SELECT EXISTS(
 `
 
 func (q *Queries) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
-	row := q.db.QueryRowContext(ctx, checkUsernameExists, username)
+	row := q.db.QueryRow(ctx, checkUsernameExists, username)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -55,14 +56,14 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	Name        string         `json:"name"`
-	Email       string         `json:"email"`
-	Username    string         `json:"username"`
-	PhoneNumber sql.NullString `json:"phone_number"`
+	Name        string      `db:"name" json:"name"`
+	Email       string      `db:"email" json:"email"`
+	Username    string      `db:"username" json:"username"`
+	PhoneNumber pgtype.Text `db:"phone_number" json:"phone_number"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Name,
 		arg.Email,
 		arg.Username,
@@ -88,7 +89,7 @@ WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -114,14 +115,14 @@ RETURNING id, name, email, username, phone_number, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID          int32          `json:"id"`
-	Name        sql.NullString `json:"name"`
-	Email       sql.NullString `json:"email"`
-	PhoneNumber sql.NullString `json:"phone_number"`
+	ID          int32       `db:"id" json:"id"`
+	Name        pgtype.Text `db:"name" json:"name"`
+	Email       pgtype.Text `db:"email" json:"email"`
+	PhoneNumber pgtype.Text `db:"phone_number" json:"phone_number"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
+	row := q.db.QueryRow(ctx, updateUser,
 		arg.ID,
 		arg.Name,
 		arg.Email,

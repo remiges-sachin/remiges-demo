@@ -10,8 +10,8 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}=== Simple LogHarbour Pipeline Test ===${NC}\n"
 
 # First, ensure database migrations are run
-echo -e "${YELLOW}Running database migrations...${NC}"
-migrate -path migrations -database "postgres://alyatest:alyatest@localhost:5432/alyatest?sslmode=disable" up
+echo -e "${YELLOW}Checking database setup...${NC}"
+# Note: Migrations should already be run by setup-config.sh or init.sh
 
 echo -e "\n${YELLOW}Starting the application...${NC}"
 go run . > app.log 2>&1 &
@@ -25,36 +25,42 @@ echo -e "\n${YELLOW}Testing API endpoints...${NC}"
 
 # Create a user
 echo -e "\n${BLUE}1. Creating a new user${NC}"
-curl -X POST http://localhost:8080/users \
+curl -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "username": "johndoe",
-    "phone_number": "+1234567890"
+    "data": {
+      "name": "John Doe",
+      "email": "john@validmail.com",
+      "username": "johndoe",
+      "phone_number": "+1234567890"
+    }
   }' | jq .
 
 sleep 2
 
 # Update the user
 echo -e "\n${BLUE}2. Updating the user${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
-    "id": 1,
-    "name": "John Smith",
-    "email": "john.smith@example.com"
+    "data": {
+      "id": 1,
+      "name": "John Smith",
+      "email": "john.smith@validmail.com"
+    }
   }' | jq .
 
 sleep 2
 
 # Try to update with invalid data
 echo -e "\n${BLUE}3. Testing validation error${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
-    "id": 1,
-    "email": "invalid-email"
+    "data": {
+      "id": 1,
+      "email": "invalid-email"
+    }
   }' | jq .
 
 sleep 2
@@ -62,7 +68,7 @@ sleep 2
 # Check Kafka messages
 echo -e "\n${YELLOW}Checking Kafka messages...${NC}"
 echo "Last 10 messages:"
-docker exec alyatest-kafka kafka-console-consumer \
+docker exec demo-kafka kafka-console-consumer \
     --bootstrap-server localhost:9092 \
     --topic logharbour-logs \
     --max-messages 10 \
@@ -93,7 +99,7 @@ curl -s -X GET "localhost:9200/logharbour-c-*/_search?size=5" \
 
 # Consumer status
 echo -e "\n${YELLOW}Consumer status:${NC}"
-docker logs --tail 5 alyatest-logharbour-consumer
+echo "Note: LogHarbour consumer not included in current docker-compose setup"
 
 # Cleanup
 echo -e "\n${YELLOW}Stopping application...${NC}"

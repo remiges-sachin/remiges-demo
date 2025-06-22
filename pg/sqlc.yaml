@@ -2,9 +2,14 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "queries"
-    schema: "migrations"
+    schema: 
+      - "migrations/001_alyatest.sql"
+      - "migrations/002_alyatest.sql"
+      - "migrations/003_add_unique_constraints.sql"
     gen:
       go:
         package: "sqlc"
         out: "sqlc-gen"
+        sql_package: "pgx/v5"
+        emit_db_tags: true
         emit_json_tags: true

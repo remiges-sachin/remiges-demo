@@ -29,7 +29,7 @@ This document details what's already implemented in the base user service exampl
 - ✅ Connection configuration from Rigel
 
 ### 5. User Management
-- ✅ POST /users endpoint for creating users
+- ✅ POST /user_create endpoint for creating users
 - ✅ User model with fields:
   - ID (auto-generated)
   - Name
@@ -99,21 +99,3 @@ The service uses these Rigel configuration keys:
 - `validation.username.minLength`
 - `validation.username.maxLength`
 - `validation.email.maxLength`
-
-## What's Missing
-
-The following features are NOT yet implemented:
-- Authentication/authorization
-- Other CRUD operations (GET, UPDATE, DELETE)
-- Pagination
-- Search functionality
-- Batch processing
-- Slow queries
-- Metrics collection
-- Elasticsearch integration for LogHarbour
-- Multi-language message catalogs
-- Redis caching
-- File uploads
-- Real-time features
-
-These missing features provide opportunities to demonstrate more Remiges capabilities.

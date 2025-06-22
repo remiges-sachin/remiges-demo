@@ -93,7 +93,7 @@ The language is determined by:
 
 Example:
 ```bash
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -H "Accept-Language: hi" \
   -d '{"id": 999}'
@@ -140,12 +140,12 @@ curl -X POST http://localhost:8080/users/update \
 Test different languages:
 ```bash
 # English (default)
-curl -X POST http://localhost:8080/users \
+curl -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -d '{}'
 
 # Hindi
-curl -X POST http://localhost:8080/users \
+curl -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -H "Accept-Language: hi" \
   -d '{}'

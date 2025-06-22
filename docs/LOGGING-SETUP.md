@@ -23,7 +23,7 @@ r.Use(router.LogRequest(logAdapter))
 
 ### Example Output:
 ```
-{"id":"abc123","app":"UserService","type":"D","pri":"Info","when":"2024-06-22T18:30:00Z","msg":"HTTP Request","data":{"method":"POST","path":"/users","status":200,"duration":23.45}}
+{"id":"abc123","app":"UserService","type":"D","pri":"Info","when":"2024-06-22T18:30:00Z","msg":"HTTP Request","data":{"method":"POST","path":"/user_create","status":200,"duration":23.45}}
 ```
 
 ## 2. Activity Logging (Business Logic)

@@ -26,12 +26,10 @@ check_service() {
 
 # Check all services
 echo -e "${YELLOW}Step 1: Verifying infrastructure services${NC}"
-check_service "PostgreSQL" "docker exec alyatest-pg pg_isready -U alyatest"
-check_service "Redis" "docker exec alyatest-redis redis-cli ping"
+check_service "PostgreSQL" "docker exec demo-postgres pg_isready -U remiges"
 check_service "etcd" "curl -s http://localhost:2379/version"
-check_service "Kafka" "docker exec alyatest-kafka kafka-broker-api-versions --bootstrap-server localhost:9092"
+check_service "Kafka" "docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:9092"
 check_service "Elasticsearch" "curl -s http://localhost:9200/_cat/health"
-check_service "Kibana" "curl -s http://localhost:5601/api/status"
 
 echo -e "\n${YELLOW}Step 2: Starting the application${NC}"
 # Start the application in background
@@ -80,24 +78,21 @@ test_endpoint() {
 }
 
 # Test various endpoints to generate different log types
-test_endpoint "GET" "/users" "" "List all users (generates activity log)"
+test_endpoint "POST" "/user_create" '{"data":{"name":"Test User","email":"test@validmail.com","username":"testuser","phone_number":"+1234567890"}}' "Create user (generates activity + change log)"
 sleep 1
 
-test_endpoint "POST" "/users" '{"name":"Test User","email":"test@example.com","phone_number":"+1234567890"}' "Create user (generates activity + change log)"
+test_endpoint "POST" "/user_update" '{"data":{"id":1,"name":"Updated User"}}' "Update user (generates activity + change log)"
 sleep 1
 
-test_endpoint "POST" "/users/update" '{"id":1,"name":"Updated User"}' "Update user (generates activity + change log)"
+test_endpoint "POST" "/user_update" '{"data":{"id":999,"name":"Non-existent"}}' "Update non-existent user (generates error log)"
 sleep 1
 
-test_endpoint "POST" "/users/update" '{"id":999,"name":"Non-existent"}' "Update non-existent user (generates error log)"
-sleep 1
-
-test_endpoint "POST" "/users" '{"name":"X","email":"invalid-email"}' "Invalid user data (generates validation error log)"
+test_endpoint "POST" "/user_create" '{"data":{"name":"X","email":"invalid-email","username":"x"}}' "Invalid user data (generates validation error log)"
 sleep 1
 
 echo -e "\n${YELLOW}Step 4: Checking Kafka messages${NC}"
 echo "Checking last 5 messages in Kafka topic..."
-docker exec alyatest-kafka kafka-console-consumer \
+docker exec demo-kafka kafka-console-consumer \
     --bootstrap-server localhost:9092 \
     --topic logharbour-logs \
     --max-messages 5 \
@@ -129,8 +124,8 @@ query_logs "c" "Recent change logs"
 query_logs "d" "Recent debug logs"
 
 echo -e "\n${YELLOW}Step 7: Consumer status${NC}"
-echo "Consumer logs (last 10 lines):"
-docker logs --tail 10 alyatest-logharbour-consumer
+echo "Note: LogHarbour consumer not included in current docker-compose setup"
+echo "Logs would be written to Kafka but not consumed to Elasticsearch without the consumer"
 
 echo -e "\n${YELLOW}Step 8: Cleanup${NC}"
 echo "Stopping application..."
@@ -139,7 +134,7 @@ wait $APP_PID 2>/dev/null
 
 echo -e "\n${GREEN}=== Test Complete ===${NC}"
 echo -e "\nYou can now:"
-echo "1. Access Kibana at http://localhost:5601"
-echo "2. Create index pattern 'logharbour-*' with timestamp field 'when'"
-echo "3. View and search logs in Discover tab"
+echo "1. Access Kafka UI at http://localhost:8090 to view messages"
+echo "2. Query Elasticsearch directly at http://localhost:9200"
+echo "3. Note: Without LogHarbour consumer, logs won't be in Elasticsearch"
 echo -e "\nApplication log saved in: app.log"

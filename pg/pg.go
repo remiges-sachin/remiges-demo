@@ -1,13 +1,12 @@
 package pg
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/synapsewave/remiges-demo/pg/sqlc-gen"
-
-	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type Config struct {
@@ -19,34 +18,53 @@ type Config struct {
 }
 
 type Provider struct {
-	db      *sql.DB
+	pool    *pgxpool.Pool
 	queries *sqlc.Queries
 }
 
 func NewProvider(cfg Config) *Provider {
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+	ctx := context.Background()
+	
+	// Build connection string in pgx format
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", 
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
 
-	db, err := sql.Open("postgres", connStr)
+	// Create a connection pool
+	poolConfig, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to parse connection string: %v", err)
+	}
+	
+	// You can configure pool settings here if needed
+	// poolConfig.MaxConns = 25
+	// poolConfig.MinConns = 5
+	
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
+		log.Fatalf("Failed to create connection pool: %v", err)
 	}
 
-	err = db.Ping()
+	// Test the connection
+	err = pool.Ping(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to ping database: %v", err)
 	}
 
-	log.Println("Successfully connected to the database")
+	log.Println("Successfully connected to the database using pgxpool")
 
-	queries := sqlc.New(db)
+	queries := sqlc.New(pool)
 
-	return &Provider{db: db, queries: queries}
+	return &Provider{pool: pool, queries: queries}
 }
 
-func (p *Provider) DB() *sql.DB {
-	return p.db
+func (p *Provider) Pool() *pgxpool.Pool {
+	return p.pool
 }
 
 func (p *Provider) Queries() *sqlc.Queries {
 	return p.queries
+}
+
+func (p *Provider) Close() {
+	p.pool.Close()
 }

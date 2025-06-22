@@ -5,15 +5,15 @@
 package sqlc
 
 import (
-	"database/sql"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type User struct {
-	ID          int32          `json:"id"`
-	Name        string         `json:"name"`
-	Email       string         `json:"email"`
-	Username    string         `json:"username"`
-	PhoneNumber sql.NullString `json:"phone_number"`
-	CreatedAt   sql.NullTime   `json:"created_at"`
-	UpdatedAt   sql.NullTime   `json:"updated_at"`
+	ID          int32              `db:"id" json:"id"`
+	Name        string             `db:"name" json:"name"`
+	Email       string             `db:"email" json:"email"`
+	Username    string             `db:"username" json:"username"`
+	PhoneNumber pgtype.Text        `db:"phone_number" json:"phone_number"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

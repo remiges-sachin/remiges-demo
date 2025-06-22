@@ -11,28 +11,25 @@ echo -e "${BLUE}=== LogHarbour Pipeline Verification ===${NC}\n"
 # Check services
 echo -e "${YELLOW}Service Status:${NC}"
 echo -n "PostgreSQL: "
-docker exec alyatest-pg pg_isready -U alyatest >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
+docker exec demo-postgres pg_isready -U remiges >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
-echo -n "Redis: "
-docker exec alyatest-redis redis-cli ping >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
+echo -n "etcd: "
+curl -s http://localhost:2379/version >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
 echo -n "Kafka: "
-docker exec alyatest-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
+docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
 echo -n "Elasticsearch: "
 curl -s http://localhost:9200/_cat/health >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
-echo -n "Kibana: "
-curl -s http://localhost:5601/api/status >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
-
-echo -n "Consumer: "
-docker ps | grep alyatest-logharbour-consumer | grep Up >/dev/null && echo -e "${GREEN}✓${NC}" || echo "✗"
+echo -n "Kafka UI: "
+curl -s http://localhost:8090 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
 # Show stats
 echo -e "\n${YELLOW}Pipeline Statistics:${NC}"
 
 # Kafka messages
-KAFKA_COUNT=$(docker exec alyatest-kafka kafka-run-class kafka.tools.GetOffsetShell \
+KAFKA_COUNT=$(docker exec demo-kafka kafka-run-class kafka.tools.GetOffsetShell \
     --broker-list localhost:9092 \
     --topic logharbour-logs 2>/dev/null | awk -F: '{sum += $3} END {print sum}')
 echo "Kafka messages in topic: ${KAFKA_COUNT:-0}"
@@ -64,6 +61,6 @@ curl -s -X GET "localhost:9200/logharbour-*/_search" \
 
 echo -e "\n${GREEN}Verification complete!${NC}"
 echo -e "\nAccess points:"
-echo "• Kibana: http://localhost:5601"
 echo "• Elasticsearch: http://localhost:9200"
-echo "• View consumer logs: docker logs -f alyatest-logharbour-consumer"
+echo "• Kafka UI: http://localhost:8090"
+echo "• Note: LogHarbour consumer not included in current setup"

@@ -21,14 +21,14 @@
 					"raw": "{\n    \"data\": {\n        \"name\": \"John Doe\",\n        \"email\": \"john@validmail.com\",\n        \"username\": \"johndoe123\",\n        \"phone_number\": \"+1234567890\"\n    }\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},
@@ -49,14 +49,14 @@
 					"raw": "{\n    \"data\": {\n        \"name\": \"J\",\n        \"email\": \"john@validmail.com\",\n        \"username\": \"johndoe123\"\n    }\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},
@@ -77,14 +77,14 @@
 					"raw": "{\"data\": {\n    \"name\": \"John Doe\",\n    \"email\": \"invalid-email\",\n    \"username\": \"johndoe123\"\n}}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},
@@ -105,14 +105,14 @@
 					"raw": "{\n    \"data\": {\n        \"name\": \"John Doe\",\n        \"email\": \"john@banned.com\",\n        \"username\": \"johndoe123\"\n    }\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},
@@ -133,14 +133,14 @@
 					"raw": "{\n    \"data\": {\n        \"name\": \"John Doe\",\n        \"email\": \"john@validmail.com\",\n        \"username\": \"john@doe\"\n    }\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},
@@ -161,14 +161,14 @@
 					"raw": "{\n    \"data\": {\n        \"name\": \"John Doe\",\n        \"email\": \"john@validmail.com\",\n        \"username\": \"johndoe123\",\n        \"phone_number\": \"123\"\n    }\n}"
 				},
 				"url": {
-					"raw": "http://localhost:8080/users",
+					"raw": "http://localhost:8080/user_create",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
-						"users"
+						"user_create"
 					]
 				}
 			},

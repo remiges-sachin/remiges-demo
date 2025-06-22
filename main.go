@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/synapsewave/remiges-demo/pg"
 	usersvc "github.com/synapsewave/remiges-demo/userservice"
+	"github.com/remiges-tech/alya/config"
 	"github.com/remiges-tech/alya/router"
 	"github.com/remiges-tech/alya/service"
 	"github.com/remiges-tech/logharbour/logharbour"
@@ -16,7 +18,18 @@ import (
 	"github.com/remiges-tech/rigel/etcd"
 )
 
+// AppConfig holds application configuration from config.json
+type AppConfig struct {
+	Server ServerConfig `json:"server"`
+}
+
+// ServerConfig holds server settings
+type ServerConfig struct {
+	Port int `json:"port"`
+}
+
 func main() {
+	// ===== LogHarbour Setup =====
 	// Initialize logger context
 	lctx := logharbour.NewLoggerContext(logharbour.DefaultPriority)
 	
@@ -37,13 +50,17 @@ func main() {
 		fallbackWriter := logharbour.NewFallbackWriter(os.Stdout, os.Stdout)
 		logger = logharbour.NewLogger(lctx, "UserService", fallbackWriter)
 	} else {
-		// Create fallback writer (Kafka primary, stdout fallback)
+		// Create multi-writer to write to both Kafka and stdout using Go's io.MultiWriter
 		defer kafkaWriter.Close()
-		fallbackWriter := logharbour.NewFallbackWriter(kafkaWriter, os.Stdout)
+		multiWriter := io.MultiWriter(kafkaWriter, os.Stdout)
+		fallbackWriter := logharbour.NewFallbackWriter(multiWriter, os.Stdout)
 		logger = logharbour.NewLogger(lctx, "UserService", fallbackWriter)
 	}
 	logger.WithPriority(logharbour.Debug2)
+	
+	logger.Info().LogActivity("Starting User Service", nil)
 
+	// ===== Rigel Configuration Setup =====
 	// Initialize etcd storage for Rigel
 	etcdEndpoints := []string{"localhost:2379"}
 	etcdStorage, err := etcd.NewEtcdStorage(etcdEndpoints)
@@ -59,7 +76,20 @@ func main() {
 	// Create context
 	ctx := context.Background()
 
-	// Get database configuration dynamically
+	// ===== Load Server Configuration from File =====
+	// Load server configuration from config.json
+	var appConfig AppConfig
+	err = config.LoadConfigFromFile("config.json", &appConfig)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to load config.json: %w", err)).LogActivity("Configuration error", nil)
+		os.Exit(1)
+	}
+	logger.Info().LogActivity("Server configuration loaded from config.json", map[string]any{
+		"server_port": appConfig.Server.Port,
+	})
+
+	// ===== Database Configuration from Rigel =====
+	// Get database configuration from Rigel (etcd)
 	host, err := rigelClient.Get(ctx, "database.host")
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to get database host: %w", err)).LogActivity("Configuration error", nil)
@@ -86,7 +116,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize database
+	// ===== Database Initialization =====
+	// Initialize database using Rigel configuration
 	dbConfig := pg.Config{
 		Host:     host,
 		Port:     port,
@@ -95,6 +126,7 @@ func main() {
 		DBName:   dbname,
 	}
 	provider := pg.NewProvider(dbConfig)
+	defer provider.Close() // Ensure connection pool is closed on exit
 	db := provider.Queries()
 	logger.Info().LogActivity("Database connection initialized", map[string]any{
 		"host": host,
@@ -103,6 +135,7 @@ func main() {
 		"db":   dbname,
 	})
 
+	// ===== HTTP Router and Middleware Setup =====
 	// Create LogHarbour adapter for request logging
 	// This enables automatic logging of all HTTP requests with comprehensive details
 	logAdapter := router.NewLogHarbourAdapter(logger)
@@ -113,6 +146,7 @@ func main() {
 	r.Use(gin.Recovery()) // Recover from panics and return 500 error
 	r.Use(router.LogRequest(logAdapter)) // Log all HTTP requests automatically
 
+	// ===== Alya Service Setup =====
 	// Create service with Rigel client
 	s := service.NewService(r).
 		WithLogHarbour(logger).
@@ -120,20 +154,15 @@ func main() {
 		WithRigelConfig(rigelClient)
 
 	// Register routes
-	s.RegisterRoute("POST", "/users", usersvc.HandleCreateUserRequest)
-	s.RegisterRoute("POST", "/users/update", usersvc.HandleUpdateUserRequest)
+	s.RegisterRoute("POST", "/user_create", usersvc.HandleCreateUserRequest)
+	s.RegisterRoute("POST", "/user_get", usersvc.HandleGetUserRequest)
+	s.RegisterRoute("POST", "/user_update", usersvc.HandleUpdateUserRequest)
 	logger.Info().LogActivity("Routes registered", nil)
 
-	// Get server port dynamically
-	serverPort, err := rigelClient.GetInt(ctx, "server.port")
-	if err != nil {
-		logger.Error(fmt.Errorf("failed to get server port: %w", err)).LogActivity("Configuration error", nil)
-		os.Exit(1)
-	}
-
-	// Start server
-	serverAddr := fmt.Sprintf(":%d", serverPort)
-	logger.Info().LogActivity("Starting server", map[string]any{"port": serverPort})
+	// ===== Server Configuration and Startup =====
+	// Start server using configuration from struct
+	serverAddr := fmt.Sprintf(":%d", appConfig.Server.Port)
+	logger.Info().LogActivity("Starting server", map[string]any{"port": appConfig.Server.Port})
 	if err := r.Run(serverAddr); err != nil {
 		logger.Error(fmt.Errorf("error starting server: %w", err)).LogActivity("Server startup failed", nil)
 		os.Exit(1)

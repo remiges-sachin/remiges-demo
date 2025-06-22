@@ -11,7 +11,7 @@ echo "================================"
 
 # Clean up the database first
 echo -e "\n${BLUE}Cleaning up database...${NC}"
-docker exec -i alyatest-pg sh -c 'PGPASSWORD=alyatest psql -U alyatest -d alyatest -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"' > /dev/null 2>&1
+docker exec -i demo-postgres sh -c 'PGPASSWORD=remiges123 psql -U remiges -d userdb -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"' > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}Database cleaned successfully${NC}"
 else
@@ -20,7 +20,7 @@ fi
 
 # First, create a user to update
 echo -e "\n${BLUE}1. Creating a test user...${NC}"
-CREATE_RESPONSE=$(curl -s -X POST http://localhost:8080/users \
+CREATE_RESPONSE=$(curl -s -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -45,7 +45,7 @@ echo -e "${GREEN}Created user with ID: $USER_ID${NC}"
 
 # Test 1: Update name only
 echo -e "\n${BLUE}2. Testing partial update - name only...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -56,7 +56,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 2: Update email only
 echo -e "\n${BLUE}3. Testing partial update - email only...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -67,7 +67,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 3: Update multiple fields
 echo -e "\n${BLUE}4. Testing multiple field update...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -80,7 +80,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 4: Invalid email format
 echo -e "\n${BLUE}5. Testing validation - invalid email...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -91,7 +91,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 5: Name too short
 echo -e "\n${BLUE}6. Testing validation - name too short...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -102,7 +102,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 6: Non-existent user
 echo -e "\n${BLUE}7. Testing update on non-existent user...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -113,7 +113,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 7: Missing user ID
 echo -e "\n${BLUE}8. Testing with missing user ID...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -123,7 +123,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 8: Banned email domain
 echo -e "\n${BLUE}9. Testing banned email domain...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -134,7 +134,7 @@ curl -X POST http://localhost:8080/users/update \
 
 # Test 9: Empty request (no fields)
 echo -e "\n${BLUE}10. Testing empty update request...${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {
@@ -145,7 +145,7 @@ curl -X POST http://localhost:8080/users/update \
 # Test 10: Multiple validation errors
 echo -e "\n${BLUE}11. Testing multiple validation errors...${NC}"
 echo -e "${BLUE}This will return language-independent error codes with msgid for multi-lingual support${NC}"
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d "{
     \"data\": {

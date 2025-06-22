@@ -2,6 +2,20 @@
 
 This guide walks you through setting up the User Service with all its components including Kafka, Elasticsearch, and Kibana for centralized logging.
 
+## Prerequisites
+
+1. **Go 1.19 or later**
+2. **Docker and Docker Compose**
+3. **Required Go tools:**
+   ```bash
+   # Install tern for database migrations
+   go install github.com/jackc/tern/v2@latest
+   
+   # Ensure Go bin is in PATH
+   export PATH=$PATH:$(go env GOPATH)/bin
+   ```
+4. **rigelctl** should be available (comes with Rigel installation)
+
 ## Quick Start (Recommended)
 
 ```bash
@@ -20,15 +34,17 @@ If you prefer to set up manually or the init script fails:
 # 1. Start all infrastructure services
 docker-compose up -d
 
-# 2. Create database tables
-PGPASSWORD=alyatest psql -h localhost -U alyatest -d alyatest -f create_tables.sql
+# 2. Install required tools (if not already installed)
+go install github.com/jackc/tern/v2@latest
 
-# 3. Initialize Rigel configuration
+# 3. Initialize Rigel configuration and run database migrations
 ./setup-config.sh
 
 # 4. Run the application
 go run .
 ```
+
+Note: The setup-config.sh script now handles both configuration and database migrations automatically.
 
 ## Detailed Setup Instructions
 
@@ -39,7 +55,8 @@ The `docker-compose.yaml` includes all required services:
 #### Core Services
 - **PostgreSQL**: Database for user data
   - Port: 5432
-  - Credentials: alyatest/alyatest
+  - Credentials: remiges/remiges123
+  - Database: userdb
   
 - **Redis**: Caching (if needed)
   - Port: 6379
@@ -68,37 +85,44 @@ The `docker-compose.yaml` includes all required services:
 
 ### 2. Database Setup
 
-Create the users table:
+Database migrations are managed using **tern** and are automatically run by the setup script.
 
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    username VARCHAR(30) NOT NULL UNIQUE,
-    phone_number VARCHAR(20),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
+Migration files are located in `pg/migrations/`:
+- `001_alyatest.sql` - Creates initial users table
+- `002_alyatest.sql` - Adds username, phone_number, and timestamps
+- `003_add_unique_constraints.sql` - Adds unique constraints
 
-Or use the provided SQL file:
+To manually run migrations:
 ```bash
-PGPASSWORD=alyatest psql -h localhost -U alyatest -d alyatest -f create_tables.sql
+cd pg/migrations
+tern migrate
 ```
+
+The tern configuration (`pg/migrations/tern.conf`) uses these credentials:
+- Host: localhost
+- Port: 5432
+- User: remiges
+- Password: remiges123
+- Database: userdb
 
 ### 3. Configuration Management (Rigel)
 
-The `setup-config.sh` script initializes all required configurations in etcd:
+The `setup-config.sh` script handles both configuration and database setup:
 
 ```bash
 ./setup-config.sh
 ```
 
-This sets up:
-- Database connection parameters
-- Validation rules for email domains
-- Service configuration
+This script:
+1. Loads the configuration schema into Rigel
+2. Sets up database connection parameters (matching docker-compose.yml)
+3. Configures validation rules
+4. Runs database migrations using tern
+
+Key configurations set:
+- Database: remiges/remiges123@localhost:5432/userdb
+- Server port: 8080
+- Validation rules for names, usernames, and emails
 
 To manually check or update configuration:
 ```bash
@@ -178,7 +202,10 @@ docker-compose logs [service-name]
 ### Database Connection Issues
 ```bash
 # Test PostgreSQL connection
-PGPASSWORD=alyatest psql -h localhost -U alyatest -d alyatest -c "SELECT 1"
+PGPASSWORD=remiges123 psql -h localhost -U remiges -d userdb -c "SELECT 1"
+
+# If authentication fails, ensure setup-config.sh was run:
+./setup-config.sh
 ```
 
 ### Kafka Issues

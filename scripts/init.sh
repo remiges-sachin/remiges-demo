@@ -65,6 +65,7 @@ echo -e "${GREEN}✓ All prerequisites installed${NC}\n"
 
 # Step 2: Stop any existing services
 echo -e "${YELLOW}Step 2: Cleaning up existing services${NC}"
+cd "$PROJECT_ROOT"
 docker-compose down >/dev/null 2>&1
 echo -e "${GREEN}✓ Cleanup complete${NC}\n"
 
@@ -74,12 +75,10 @@ docker-compose up -d
 
 # Wait for services to be ready
 echo -e "\n${YELLOW}Step 4: Waiting for services to be ready${NC}"
-wait_for_service "PostgreSQL" "docker exec alyatest-pg pg_isready -U alyatest"
-wait_for_service "Redis" "docker exec alyatest-redis redis-cli ping"
+wait_for_service "PostgreSQL" "docker exec demo-postgres pg_isready -U remiges"
 wait_for_service "etcd" "curl -s http://localhost:2379/version"
-wait_for_service "Kafka" "docker exec alyatest-kafka kafka-broker-api-versions --bootstrap-server localhost:9092"
+wait_for_service "Kafka" "docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:9092"
 wait_for_service "Elasticsearch" "curl -s http://localhost:9200/_cat/health"
-wait_for_service "Kibana" "curl -s http://localhost:5601/api/status"
 
 # Step 5: Run database migrations
 echo -e "\n${YELLOW}Step 5: Setting up database${NC}"
@@ -119,8 +118,8 @@ fi
 
 # Step 6: Initialize Rigel configuration
 echo -e "\n${YELLOW}Step 6: Initializing Rigel configuration${NC}"
-if [ -f "setup-config.sh" ]; then
-    ./setup-config.sh >/dev/null 2>&1
+if [ -f "$SCRIPT_DIR/setup-config.sh" ]; then
+    "$SCRIPT_DIR/setup-config.sh" >/dev/null 2>&1
     echo -e "${GREEN}✓ Rigel configuration initialized${NC}"
 else
     echo -e "${RED}✗ setup-config.sh not found${NC}"
@@ -131,40 +130,33 @@ echo -e "\n${YELLOW}Step 7: Installing Go dependencies${NC}"
 go mod download
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 
-# Step 8: Verify consumer service
-echo -e "\n${YELLOW}Step 8: Verifying consumer service${NC}"
-if docker ps | grep -q alyatest-logharbour-consumer; then
-    echo -e "${GREEN}✓ LogHarbour consumer is running${NC}"
-else
-    echo -e "${YELLOW}! Consumer service not running, restarting...${NC}"
-    docker-compose restart logharbour-consumer
-fi
+# Step 8: Note about LogHarbour consumer
+echo -e "\n${YELLOW}Step 8: LogHarbour Consumer${NC}"
+echo -e "${YELLOW}Note: LogHarbour consumer is not included in the current docker-compose setup${NC}"
+echo -e "${YELLOW}You may need to run it separately if required for your use case${NC}"
 
-# Step 9: Create Kibana index pattern
-echo -e "\n${YELLOW}Step 9: Setting up Kibana (optional)${NC}"
-echo "You can access Kibana at http://localhost:5601"
-echo "To set up index patterns:"
-echo "1. Go to Stack Management → Index Patterns"
-echo "2. Create pattern: logharbour-*"
-echo "3. Set time field: when"
+# Step 9: Kafka UI information
+echo -e "\n${YELLOW}Step 9: Monitoring Tools${NC}"
+echo "You can access Kafka UI at http://localhost:8090"
+echo "This provides a web interface to monitor Kafka topics and messages"
 
 # Summary
 echo -e "\n${GREEN}=== Initialization Complete ===${NC}"
 echo -e "\nServices running:"
-echo "• PostgreSQL: localhost:5432"
-echo "• Redis: localhost:6379"
+echo "• PostgreSQL: localhost:5432 (user: remiges, db: userdb)"
 echo "• etcd: localhost:2379"
 echo "• Kafka: localhost:9092"
+echo "• Zookeeper: localhost:2181"
 echo "• Elasticsearch: localhost:9200"
-echo "• Kibana: localhost:5601"
+echo "• Kafka UI: localhost:8090"
 
 echo -e "\n${YELLOW}To start the application:${NC}"
 echo "  go run ."
 
 echo -e "\n${YELLOW}To run tests:${NC}"
-echo "  ./test-complete-pipeline.sh"
+echo "  $SCRIPT_DIR/test-complete-pipeline.sh"
 
 echo -e "\n${YELLOW}To verify setup:${NC}"
-echo "  ./verify-pipeline.sh"
+echo "  $SCRIPT_DIR/verify-pipeline.sh"
 
 echo -e "\n${GREEN}Happy coding! 🚀${NC}"

@@ -90,8 +90,8 @@ The service uses Rigel for dynamic configuration management. Key configuration p
 ## Features
 
 ### User Management
-- **Create User** (POST /users) - Create new users with validation
-- **Update User** (POST /users/update) - Partial updates with field-level change tracking
+- **Create User** (POST /user_create) - Create new users with validation
+- **Update User** (POST /user_update) - Partial updates with field-level change tracking
 
 ### Logging System
 Three-tier logging system using LogHarbour with Kafka and Elasticsearch:

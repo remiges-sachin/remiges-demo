@@ -13,7 +13,7 @@ Currently, no authentication is required (for demo purposes).
 ### 1. Create User
 Creates a new user in the system.
 
-**Endpoint:** `POST /users`
+**Endpoint:** `POST /user_create`
 
 **Request Body:**
 ```json
@@ -70,7 +70,7 @@ Creates a new user in the system.
 ### 2. Update User
 Updates an existing user with partial field updates.
 
-**Endpoint:** `POST /users/update`
+**Endpoint:** `POST /user_update`
 
 **Request Body:**
 ```json

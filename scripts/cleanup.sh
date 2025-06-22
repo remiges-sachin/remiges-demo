@@ -51,6 +51,7 @@ fi
 
 # Step 2: Stop Docker services
 echo -e "\n${YELLOW}Step 2: Stopping Docker services${NC}"
+cd "$PROJECT_ROOT"
 docker-compose down
 echo -e "${GREEN}✓ Services stopped${NC}"
 

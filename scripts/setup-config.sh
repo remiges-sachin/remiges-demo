@@ -1,27 +1,17 @@
 #!/bin/bash
 
-# Setup script for Remiges Demo Application
-# This script:
-# 1. Loads the configuration schema into Rigel (via etcd)
-# 2. Sets up all required configuration values
-# 3. Runs database migrations using tern
-#
-# Prerequisites:
-# - Docker containers must be running (docker-compose up -d)
-# - rigelctl must be installed and in PATH
-# - tern must be installed (go install github.com/jackc/tern/v2@latest)
-#
-# Database credentials (from docker-compose.yml):
-# - User: remiges
-# - Password: remiges123
-# - Database: userdb
-
 # Wait for etcd to be ready
 echo "Waiting for etcd to be ready..."
 while ! nc -z localhost 2379; do   
   sleep 1
 done
 echo "etcd is ready!"
+
+# Install Rigel CLI if not already installed
+if ! command -v rigelctl &> /dev/null; then
+    echo "Installing Rigel CLI..."
+    go install github.com/remiges-tech/rigel/cmd/rigelctl@latest
+fi
 
 # Function to set config with retry
 set_config() {
@@ -58,15 +48,17 @@ echo "Setting up configuration in etcd..."
 
 # Database configuration (matching docker-compose.yml)
 set_config "database.host" "localhost"
-set_config "database.port" "5432"
+set_config "database.port" 5432
 set_config "database.user" "remiges"
 set_config "database.password" "remiges123"
 set_config "database.dbname" "userdb"
 
-# Server configuration
-set_config "server.port" "8080"
+# Note: Server port is now loaded from config.json, not etcd
+echo "Note: Server port (8080) is configured in config.json"
 
-# Validation rules
+# Validation rules (these are not used in the current implementation)
+# They are defined as constants in userservice/common.go
+# But we can set them for documentation purposes
 set_config "validation.name.minLength" "2"
 set_config "validation.name.maxLength" "50"
 set_config "validation.username.minLength" "3"
@@ -74,36 +66,3 @@ set_config "validation.username.maxLength" "30"
 set_config "validation.email.maxLength" "100"
 
 echo "Configuration setup complete!"
-
-# Run database migrations with tern
-echo ""
-echo "Running database migrations..."
-
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to be ready..."
-while ! nc -z localhost 5432; do   
-  sleep 1
-done
-echo "PostgreSQL is ready!"
-
-# Check if tern is installed
-if ! command -v tern &> /dev/null; then
-    echo "Error: tern is not installed. Please install it first:"
-    echo "  go install github.com/jackc/tern/v2@latest"
-    exit 1
-fi
-
-# Run migrations
-echo "Executing migrations..."
-cd pg/migrations
-if tern migrate; then
-    echo "Database migrations completed successfully!"
-else
-    echo "Failed to run database migrations"
-    echo "Please check your database connection and credentials"
-    exit 1
-fi
-cd ../..
-
-echo ""
-echo "Setup complete! You can now run the application with: go run ."

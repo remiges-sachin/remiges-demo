@@ -31,7 +31,7 @@ go run .
 ## 5. Test
 ```bash
 # Create a user
-curl -X POST http://localhost:8080/users \
+curl -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -43,7 +43,7 @@ curl -X POST http://localhost:8080/users \
   }'
 
 # Update a user (ID is now in the request body)
-curl -X POST http://localhost:8080/users/update \
+curl -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
     "data": {

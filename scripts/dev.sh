@@ -60,8 +60,8 @@ case "${1:-}" in
         
     test)
         echo -e "${YELLOW}Running pipeline test...${NC}"
-        if [ -f test-complete-pipeline.sh ]; then
-            ./test-complete-pipeline.sh
+        if [ -f "$SCRIPT_DIR/test-complete-pipeline.sh" ]; then
+            "$SCRIPT_DIR/test-complete-pipeline.sh"
         else
             echo "Test script not found!"
         fi
@@ -69,8 +69,8 @@ case "${1:-}" in
         
     verify)
         echo -e "${YELLOW}Verifying setup...${NC}"
-        if [ -f verify-pipeline.sh ]; then
-            ./verify-pipeline.sh
+        if [ -f "$SCRIPT_DIR/verify-pipeline.sh" ]; then
+            "$SCRIPT_DIR/verify-pipeline.sh"
         else
             echo "Verification script not found!"
         fi
@@ -78,7 +78,7 @@ case "${1:-}" in
         
     kafka)
         echo -e "${YELLOW}Monitoring Kafka messages (Ctrl+C to stop)...${NC}"
-        docker exec alyatest-kafka kafka-console-consumer \
+        docker exec demo-kafka kafka-console-consumer \
             --bootstrap-server localhost:9092 \
             --topic logharbour-logs \
             --from-beginning | jq .
@@ -88,41 +88,37 @@ case "${1:-}" in
         echo -e "${YELLOW}Recent logs from Elasticsearch:${NC}"
         curl -s -X GET "localhost:9200/logharbour-*/_search?size=10&sort=when:desc" \
             -H 'Content-Type: application/json' | \
-            jq '.hits.hits[]._source | {type, module, msg, when}'
+            jq '.hits.hits[]._source | {type: .type, module: .module, msg: .msg, when: .when}'
         ;;
         
     consumer)
         echo -e "${YELLOW}Consumer logs (last 20 lines):${NC}"
-        docker logs --tail 20 -f alyatest-logharbour-consumer
+        docker logs --tail 20 -f demo-logharbour-consumer
         ;;
         
     restart)
         echo -e "${YELLOW}Restarting all services...${NC}"
-        docker-compose restart
+        cd "$PROJECT_ROOT" && docker-compose restart
         echo -e "${GREEN}✓ Services restarted${NC}"
         ;;
         
     status)
         echo -e "${YELLOW}Service Status:${NC}"
-        docker-compose ps
+        cd "$PROJECT_ROOT" && docker-compose ps
         echo ""
         echo -e "${YELLOW}Quick Health Check:${NC}"
         
         # Check each service
         echo -n "PostgreSQL: "
-        docker exec alyatest-pg pg_isready -U alyatest >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
-        
-        echo -n "Redis: "
-        docker exec alyatest-redis redis-cli ping >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
+        docker exec demo-postgres pg_isready -U remiges >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
         
         echo -n "Kafka: "
-        docker exec alyatest-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
+        docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
         
         echo -n "Elasticsearch: "
         curl -s http://localhost:9200/_cat/health >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
         
-        echo -n "Kibana: "
-        curl -s http://localhost:5601/api/status >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo -e "${RED}✗${NC}"
+        # Note: No Kibana in current setup
         ;;
         
     *)

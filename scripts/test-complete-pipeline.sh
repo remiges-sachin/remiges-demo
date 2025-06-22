@@ -13,10 +13,9 @@ echo -e "${BLUE}=== Complete LogHarbour Kafka-Elasticsearch Pipeline Test ===${N
 echo -e "${YELLOW}Cleaning up any existing processes...${NC}"
 lsof -ti:8080 | xargs -r kill -9 2>/dev/null
 
-# Ensure consumer is running
-echo -e "${YELLOW}Restarting consumer service...${NC}"
-docker-compose restart logharbour-consumer
-sleep 3
+# Note about consumer
+echo -e "${YELLOW}Note: LogHarbour consumer not included in current setup${NC}"
+echo -e "${YELLOW}Logs will be written to Kafka but not consumed to Elasticsearch${NC}"
 
 echo -e "\n${YELLOW}Starting the application...${NC}"
 go run . > app.log 2>&1 &
@@ -40,47 +39,55 @@ echo -e "\n${YELLOW}=== Testing API Endpoints ===${NC}"
 
 # 1. Create user - should generate activity log and change log
 echo -e "\n${BLUE}1. Creating a new user (generates Activity + Change logs)${NC}"
-RESPONSE=$(curl -s -X POST http://localhost:8080/users \
+RESPONSE=$(curl -s -X POST http://localhost:8080/user_create \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "username": "johndoe",
-    "phone_number": "+1234567890"
+    "data": {
+      "name": "John Doe",
+      "email": "john.doe@validmail.com",
+      "username": "johndoe",
+      "phone_number": "+1234567890"
+    }
   }')
 echo "Response: $RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
 sleep 2
 
 # 2. Update user - should generate activity log and change log
 echo -e "\n${BLUE}2. Updating user (generates Activity + Change logs)${NC}"
-RESPONSE=$(curl -s -X POST http://localhost:8080/users/update \
+RESPONSE=$(curl -s -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
-    "id": 1,
-    "name": "John Smith",
-    "email": "john.smith@example.com"
+    "data": {
+      "id": 1,
+      "name": "John Smith",
+      "email": "john.smith@validmail.com"
+    }
   }')
 echo "Response: $RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
 sleep 2
 
 # 3. Validation error - should generate activity log with error
 echo -e "\n${BLUE}3. Testing validation error (generates Activity log with error)${NC}"
-RESPONSE=$(curl -s -X POST http://localhost:8080/users/update \
+RESPONSE=$(curl -s -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
-    "id": 1,
-    "email": "invalid-email-format"
+    "data": {
+      "id": 1,
+      "email": "invalid-email-format"
+    }
   }')
 echo "Response: $RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
 sleep 2
 
 # 4. Non-existent user - should generate activity log with error
 echo -e "\n${BLUE}4. Updating non-existent user (generates Activity log with error)${NC}"
-RESPONSE=$(curl -s -X POST http://localhost:8080/users/update \
+RESPONSE=$(curl -s -X POST http://localhost:8080/user_update \
   -H "Content-Type: application/json" \
   -d '{
-    "id": 999,
-    "name": "Ghost User"
+    "data": {
+      "id": 999,
+      "name": "Ghost User"
+    }
   }')
 echo "Response: $RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
 sleep 3
@@ -90,7 +97,7 @@ echo -e "\n${YELLOW}=== Checking Logging Pipeline ===${NC}"
 
 # Check Kafka
 echo -e "\n${BLUE}Kafka Topic Messages (last 5):${NC}"
-docker exec alyatest-kafka kafka-console-consumer \
+docker exec demo-kafka kafka-console-consumer \
     --bootstrap-server localhost:9092 \
     --topic logharbour-logs \
     --from-beginning \
@@ -140,7 +147,7 @@ curl -s -X GET "localhost:9200/logharbour-*/_search" \
 
 # Consumer status
 echo -e "\n${BLUE}Consumer Service Status:${NC}"
-docker logs --tail 10 alyatest-logharbour-consumer 2>&1 | grep -v "^$"
+echo "Note: LogHarbour consumer not included in current docker-compose setup"
 
 # Summary
 echo -e "\n${YELLOW}=== Summary ===${NC}"
@@ -149,9 +156,10 @@ curl -s -X GET "localhost:9200/logharbour-*/_count" | jq '.count' 2>/dev/null
 
 echo -e "\n${GREEN}✓ Pipeline test complete!${NC}"
 echo -e "\nYou can access:"
-echo "- Kibana UI: http://localhost:5601"
+echo "- Kafka UI: http://localhost:8090"
 echo "- Elasticsearch: http://localhost:9200"
 echo "- Application logs: cat app.log"
+echo "\nNote: Without LogHarbour consumer, logs are in Kafka but not Elasticsearch"
 
 # Cleanup
 echo -e "\n${YELLOW}Stopping application...${NC}"
