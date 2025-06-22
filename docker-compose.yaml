@@ -1,0 +1,97 @@
+version: "3.7"
+
+services:
+  pg:
+    image: bitnami/postgresql
+    container_name: alyatest-pg
+    environment:
+      POSTGRES_USER: alyatest
+      POSTGRES_PASSWORD: alyatest
+      POSTGRES_DB: alyatest
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis
+    container_name: alyatest-redis
+    ports:
+      - "6379:6379"
+
+  etcd:
+    image: bitnami/etcd:latest
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - etcd_data:/bitnami/etcd
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: alyatest-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: alyatest-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: alyatest-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: alyatest-kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+
+  logharbour-consumer:
+    build: ./consumer
+    container_name: alyatest-logharbour-consumer
+    depends_on:
+      - kafka
+      - elasticsearch
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    restart: unless-stopped
+    networks:
+      - default
+
+volumes:
+  postgres_data:
+  etcd_data:
+  elasticsearch_data:

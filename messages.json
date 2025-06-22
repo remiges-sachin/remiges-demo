@@ -1,0 +1,50 @@
+{
+  "message_templates": {
+    "101": {
+      "en": "@<field>@ @<errcode>@",
+      "hi": "@<field>@ @<errcode>@"
+    },
+    "102": {
+      "en": "An internal error occurred. Please try again later",
+      "hi": "एक आंतरिक त्रुटि हुई। कृपया बाद में पुनः प्रयास करें"
+    },
+    "103": {
+      "en": "Email domain is not allowed",
+      "hi": "ईमेल डोमेन की अनुमति नहीं है"
+    },
+    "104": {
+      "en": "@<field>@ already exists",
+      "hi": "@<field>@ पहले से मौजूद है"
+    },
+    "105": {
+      "en": "@<field>@ not found",
+      "hi": "@<field>@ नहीं मिला"
+    },
+    "106": {
+      "en": "No fields provided for update",
+      "hi": "अपडेट के लिए कोई फ़ील्ड प्रदान नहीं की गई"
+    }
+  },
+  "field_names": {
+    "name": {
+      "en": "Name",
+      "hi": "नाम"
+    },
+    "email": {
+      "en": "Email",
+      "hi": "ईमेल"
+    },
+    "username": {
+      "en": "Username",
+      "hi": "उपयोगकर्ता नाम"
+    },
+    "phone_number": {
+      "en": "Phone number",
+      "hi": "फ़ोन नंबर"
+    },
+    "id": {
+      "en": "ID",
+      "hi": "आईडी"
+    }
+  }
+}
