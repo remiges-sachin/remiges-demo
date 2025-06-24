@@ -19,17 +19,18 @@ import (
 // 3. Activity logging for audit trails
 // 4. Comprehensive validation and error handling
 func HandleUpdateUserRequest(c *gin.Context, s *service.Service) {
-	logger := s.LogHarbour.WithModule("UserService")
-	logger.Info().LogActivity("UpdateUser request received", nil)
-
-	// Get queries object
-	queries := s.Database.(*sqlc.Queries)
-
-	// Parse and bind request data
+	// Parse and bind request data first to get the ID
 	var updateUserReq UpdateUserRequest
 	if err := wscutils.BindJSON(c, &updateUserReq); err != nil {
 		return
 	}
+
+	// Create logger with module and instance information
+	logger := s.LogHarbour.WithModule("UserService").WithInstanceId(fmt.Sprintf("%d", updateUserReq.ID))
+	logger.Info().LogActivity("UpdateUser request received", nil)
+
+	// Get queries object
+	queries := s.Database.(*sqlc.Queries)
 
 	// Check if user exists and get current values for changelog
 	currentUser, err := queries.GetUserByID(c.Request.Context(), updateUserReq.ID)
@@ -197,12 +198,11 @@ func HandleUpdateUserRequest(c *gin.Context, s *service.Service) {
 	
 	// Log the data change if there were actual changes
 	if len(changeInfo.Changes) > 0 {
-		logger.LogDataChange(fmt.Sprintf("User %d updated", updateUserReq.ID), *changeInfo)
+		logger.LogDataChange("User updated", *changeInfo)
 	}
 
 	// Log the update activity
 	logger.Info().LogActivity("User updated", map[string]any{
-		"user_id": updateUserReq.ID,
 		"updated_fields": map[string]any{
 			"name_changed":  updateUserReq.Name != nil,
 			"email_changed": updateUserReq.Email != nil,

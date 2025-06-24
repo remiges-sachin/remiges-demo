@@ -12,7 +12,16 @@ import (
 )
 
 func HandleCreateUserRequest(c *gin.Context, s *service.Service) {
-	logger := s.LogHarbour.WithModule("UserService")
+	//-------------------------------------------------------------------------
+	// Step 1: Parse and bind request data
+	//-------------------------------------------------------------------------
+	var createUserReq CreateUserRequest
+	if err := wscutils.BindJSON(c, &createUserReq); err != nil {
+		return
+	}
+
+	// Create logger with module and use username as instance ID for create operations
+	logger := s.LogHarbour.WithModule("UserService").WithInstanceId(createUserReq.Username)
 	logger.Info().LogActivity("CreateUser request received", nil)
 
 	// Get queries object once at the start
@@ -39,15 +48,6 @@ func HandleCreateUserRequest(c *gin.Context, s *service.Service) {
 	if err != nil {
 		maxEmailLength = "100" // Default value
 	}
-
-	//-------------------------------------------------------------------------
-	// Step 1: Parse and bind request data
-	//-------------------------------------------------------------------------
-	var createUserReq CreateUserRequest
-	if err := wscutils.BindJSON(c, &createUserReq); err != nil {
-		return
-	}
-	logger.Info().LogActivity("CreateUser request parsed", map[string]any{"username": createUserReq.Name})
 
 	//-------------------------------------------------------------------------
 	// Step 2: Validate request data

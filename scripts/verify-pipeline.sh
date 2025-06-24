@@ -22,8 +22,14 @@ docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:90
 echo -n "Elasticsearch: "
 curl -s http://localhost:9200/_cat/health >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
 
+echo -n "Kibana: "
+curl -s http://localhost:5601/api/status >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
+
 echo -n "Kafka UI: "
 curl -s http://localhost:8090 >/dev/null 2>&1 && echo -e "${GREEN}✓${NC}" || echo "✗"
+
+echo -n "LogHarbour Consumer: "
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q "demo-logharbour-consumer.*Up" && echo -e "${GREEN}✓${NC}" || echo "✗"
 
 # Show stats
 echo -e "\n${YELLOW}Pipeline Statistics:${NC}"
@@ -62,5 +68,6 @@ curl -s -X GET "localhost:9200/logharbour-*/_search" \
 echo -e "\n${GREEN}Verification complete!${NC}"
 echo -e "\nAccess points:"
 echo "• Elasticsearch: http://localhost:9200"
+echo "• Kibana: http://localhost:5601"
 echo "• Kafka UI: http://localhost:8090"
-echo "• Note: LogHarbour consumer not included in current setup"
+echo "• LogHarbour Consumer: Running in docker-compose"

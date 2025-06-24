@@ -17,17 +17,18 @@ import (
 // 2. Error handling for not found cases
 // 3. Activity logging for audit trails
 func HandleGetUserRequest(c *gin.Context, s *service.Service) {
-	logger := s.LogHarbour.WithModule("UserService")
-	logger.Info().LogActivity("GetUser request received", nil)
-
-	// Get queries object
-	queries := s.Database.(*sqlc.Queries)
-
-	// Parse and bind request data
+	// Parse and bind request data first to get the ID
 	var getUserReq GetUserRequest
 	if err := wscutils.BindJSON(c, &getUserReq); err != nil {
 		return
 	}
+
+	// Create logger with module and instance information
+	logger := s.LogHarbour.WithModule("UserService").WithInstanceId(fmt.Sprintf("%d", getUserReq.ID))
+	logger.Info().LogActivity("GetUser request received", nil)
+
+	// Get queries object
+	queries := s.Database.(*sqlc.Queries)
 
 	// Validate request data
 	validationErrors := wscutils.WscValidate(getUserReq, func(err validator.FieldError) []string {
@@ -61,7 +62,6 @@ func HandleGetUserRequest(c *gin.Context, s *service.Service) {
 
 	// Log the successful retrieval
 	logger.Info().LogActivity("User retrieved", map[string]any{
-		"user_id": user.ID,
 		"username": user.Username,
 	})
 

@@ -84,6 +84,27 @@ services:
       timeout: 10s
       retries: 5
 
+  # Kibana for ElasticSearch visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: demo-kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: "kibana"
+      SERVER_NAME: "demo-kibana"
+      SERVER_HOST: "0.0.0.0"
+      XPACK_SECURITY_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Optional: Kafka UI for monitoring
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -96,6 +117,31 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  # LogHarbour Consumer - consumes from Kafka and indexes to Elasticsearch
+  logharbour-consumer:
+    build:
+      context: ./logharbour
+      dockerfile: Dockerfile
+    container_name: demo-logharbour-consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_ADDRESSES: "http://elasticsearch:9200"
+      KAFKA_BROKERS: "kafka:29092"
+      KAFKA_TOPIC: "logharbour-logs"
+      ELASTICSEARCH_INDEX: "logharbour"
+      KAFKA_BATCH_SIZE: "10"
+      USE_CONSUMER_GROUP: "true"
+      KAFKA_CONSUMER_GROUP: "logharbour-consumer-group"
+      KAFKA_OFFSET_TYPE: "earliest"
+      LOG_LEVEL: "info"
+    networks:
+      - default
+    restart: unless-stopped
 
 volumes:
   postgres_data:

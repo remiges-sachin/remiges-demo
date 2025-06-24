@@ -79,6 +79,7 @@ wait_for_service "PostgreSQL" "docker exec demo-postgres pg_isready -U remiges"
 wait_for_service "etcd" "curl -s http://localhost:2379/version"
 wait_for_service "Kafka" "docker exec demo-kafka kafka-broker-api-versions --bootstrap-server localhost:9092"
 wait_for_service "Elasticsearch" "curl -s http://localhost:9200/_cat/health"
+wait_for_service "Kibana" "curl -s http://localhost:5601/api/status"
 
 # Step 5: Run database migrations
 echo -e "\n${YELLOW}Step 5: Setting up database${NC}"
@@ -130,15 +131,23 @@ echo -e "\n${YELLOW}Step 7: Installing Go dependencies${NC}"
 go mod download
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 
-# Step 8: Note about LogHarbour consumer
+# Step 8: LogHarbour Consumer
 echo -e "\n${YELLOW}Step 8: LogHarbour Consumer${NC}"
-echo -e "${YELLOW}Note: LogHarbour consumer is not included in the current docker-compose setup${NC}"
-echo -e "${YELLOW}You may need to run it separately if required for your use case${NC}"
+echo -e "${GREEN}✓ LogHarbour consumer is included and will start automatically${NC}"
+echo -e "  The consumer will process logs from Kafka to Elasticsearch"
 
-# Step 9: Kafka UI information
+# Step 9: Monitoring Tools
 echo -e "\n${YELLOW}Step 9: Monitoring Tools${NC}"
-echo "You can access Kafka UI at http://localhost:8090"
-echo "This provides a web interface to monitor Kafka topics and messages"
+echo "• Kafka UI: http://localhost:8090 - Monitor Kafka topics and messages"
+echo "• Kibana: http://localhost:5601 - Visualize Elasticsearch data and logs"
+
+# Step 10: Setup Kibana dashboards
+echo -e "\n${YELLOW}Step 10: Setting up Kibana dashboards${NC}"
+if [ -f "$SCRIPT_DIR/setup-kibana-dashboard.sh" ]; then
+    "$SCRIPT_DIR/setup-kibana-dashboard.sh"
+else
+    echo -e "${YELLOW}Note: Run scripts/setup-kibana-dashboard.sh after generating some logs${NC}"
+fi
 
 # Summary
 echo -e "\n${GREEN}=== Initialization Complete ===${NC}"
@@ -148,7 +157,9 @@ echo "• etcd: localhost:2379"
 echo "• Kafka: localhost:9092"
 echo "• Zookeeper: localhost:2181"
 echo "• Elasticsearch: localhost:9200"
+echo "• Kibana: localhost:5601"
 echo "• Kafka UI: localhost:8090"
+echo "• LogHarbour Consumer: Processing logs from Kafka to Elasticsearch"
 
 echo -e "\n${YELLOW}To start the application:${NC}"
 echo "  go run ."
